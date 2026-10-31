@@ -7,10 +7,20 @@ This is my **Mack Finances** website: a private personal finance dashboard for t
 > Private project. Secrets are never stored in this repository.
 
 ## Screenshots
-| Light | Dark |
-|---|---|
-| ![Dashboard light](docs/screenshots/03-dashboard-light.png) | ![Dashboard dark](docs/screenshots/02-dashboard-dark.png) |
-| ![Projections](docs/screenshots/04-projections-light.png) | ![New account](docs/screenshots/01-dashboard-new-account-dark.png) |
+*(Demo data only, not real finances.)*
+
+**Dashboard: light and dark mode**
+![Dashboard, light mode](docs/screenshots/01-dashboard-light.png)
+![Dashboard, dark mode](docs/screenshots/02-dashboard-dark.png)
+
+**Projections (month / quarter / year)**
+![Projections](docs/screenshots/03-projections-light.png)
+
+**Savings goals**
+![Goals](docs/screenshots/04-goals-dark.png)
+
+**Investments and Freedom Number**
+![Investments and Freedom Number](docs/screenshots/05-investments-freedom-light.png)
 
 ## Run it
 ```bash
@@ -35,7 +45,7 @@ web/src/lib/           money.ts (integer cents), dates.ts (local dates), calc.ts
 web/src/pages/         Login, Setup, Dashboard, Transactions, Income, Budget, Goals, Investments, Projections, Assistant, Settings, Export
 web/e2e/live.spec.ts   live end-to-end tests: UI → real Supabase
 web/tests/             offline unit + UI tests (mock client) used during development
-docs/screenshots/      app screenshots (light & dark)
+docs/screenshots/      app screenshots (demo data, light & dark)
 ```
 
 ## Risk controls

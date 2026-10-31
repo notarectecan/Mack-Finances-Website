@@ -17,6 +17,8 @@ playwright-report/
 setup-computer.bat
 sign-in-github.bat
 publish-to-github.bat
+upload-update.bat
+update-log-*.txt
 setup-log*.txt
 github-code.txt
 publish-log.txt
