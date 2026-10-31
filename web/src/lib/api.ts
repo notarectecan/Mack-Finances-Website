@@ -151,7 +151,6 @@ export const updateIncomeSource = async (id: string, patch: { name?: string; exp
 export const recordSnapshot = async (snapshot_date: string, assets: Cents) =>
   check(await supabase.from("net_worth_snapshots").upsert({ snapshot_date, assets: centsToDb(assets), liabilities: "0.00" }, { onConflict: "user_id,snapshot_date" }));
 
-export const seedDemo = async () => check(await supabase.rpc("seed_demo_data")) as string;
 
 // ---------- AI (Edge Functions; OpenAI key stays server-side) ----------
 async function invoke<T>(name: string, body: object): Promise<T> {
@@ -169,3 +168,14 @@ export const aiCategorize = (description: string, kind: "income" | "expense" = "
 /** Server aggregates per-category totals; no raw rows go to OpenAI. */
 export const aiSummary = (period_start: string, period_end: string, question?: string) =>
   invoke<{ answer: string; highlights: string[] }>("ai-summary", { period_start, period_end, question });
+
+// ---------- CSV import ----------
+export interface CsvImport { id: string; file_name: string; row_count: number; imported_count: number; skipped_count: number; categories_created: number; created_at: string }
+export interface ImportResult { import_id: string | null; rows: number; imported: number; skipped_duplicates: number; categories_created: number }
+/** One atomic database call: every row is imported, or none are. Runs as the user (RLS applies). */
+export const importTransactions = async (fileName: string, rows: object[], skipDuplicates: boolean, createCategories: boolean) =>
+  check(await supabase.rpc("import_transactions", { p_file_name: fileName, p_rows: rows, p_skip_duplicates: skipDuplicates, p_create_categories: createCategories })) as ImportResult;
+export const listImports = async () =>
+  check(await supabase.from("csv_imports").select("*").order("created_at", { ascending: false }).limit(10)) as CsvImport[];
+/** Deleting the import record removes every transaction it created (database cascade). */
+export const undoImport = async (id: string) => check(await supabase.from("csv_imports").delete().eq("id", id));

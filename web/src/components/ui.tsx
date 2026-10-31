@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Cents, fmt } from "../lib/money";
 
 // ---------- icons (thin-line, Lucide-style paths, no dependency) ----------
@@ -53,13 +54,15 @@ export const Card = ({ title, action, children, className = "", testid }: { titl
 );
 export function Modal({ title, onClose, children, wide, testid }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; testid?: string }) {
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onClose]);
-  return (
+  // Portal to <body> so a parent card's hover transform can never move or clip the dialog
+  return createPortal(
     <div className="modal-bg" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className={"modal" + (wide ? " wide" : "")} role="dialog" aria-label={title} data-testid={testid}>
         <div className="card-h"><h2>{title}</h2><button className="iconbtn" onClick={onClose} aria-label="Close"><Icon name="x" /></button></div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 export function Seg<T extends string>({ value, options, onChange, testid }: { value: T; options: { v: T; l: string }[]; onChange: (v: T) => void; testid?: string }) {

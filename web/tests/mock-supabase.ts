@@ -4,7 +4,7 @@
 type Row = Record<string, any>;
 const uid = () => crypto.randomUUID();
 const W = window as any;
-const db: Record<string, Row[]> = W.__db?.tables ?? { profiles: [], categories: [], income_sources: [], accounts: [], goals: [], transactions: [], budgets: [], holdings: [], net_worth_snapshots: [], ai_insights: [] };
+const db: Record<string, Row[]> = W.__db?.tables ?? { profiles: [], categories: [], income_sources: [], accounts: [], goals: [], transactions: [], budgets: [], holdings: [], net_worth_snapshots: [], ai_insights: [], csv_imports: [] };
 const users: { id: string; email: string; password: string; name: string }[] = W.__db?.users ?? [];
 const log: { op: string; table: string; payload?: any }[] = W.__db?.log ?? [];
 W.__db = { tables: db, users, log, aiMode: W.__db?.aiMode ?? "off" };
@@ -88,6 +88,7 @@ class Q {
     }
     db[this.table] = db[this.table].filter((r) => !rows.includes(r));
     if (this.table === "goals") for (const t of db.transactions) if (rows.some((g) => g.id === t.goal_id)) t.goal_id = null;
+    if (this.table === "csv_imports") db.transactions = db.transactions.filter((t) => !rows.some((i) => i.id === t.import_id));
     return { data: null, error: null };
   }
 }
@@ -122,6 +123,33 @@ function seed(u: string) {
   return "seeded";
 }
 
+function importTx(u: string, p: any) {
+  const rows = p.p_rows as any[];
+  if (!Array.isArray(rows) || !rows.length) return { data: null, error: { message: "the file has no rows to import" } };
+  if (rows.length > 5000) return { data: null, error: { message: "too many rows (max 5000 per import)" } };
+  const imp = { id: uid(), user_id: u, file_name: p.p_file_name, row_count: rows.length, imported_count: 0, skipped_count: 0, categories_created: 0, created_at: new Date().toISOString() };
+  const staged: Row[] = []; let dup = 0, cats = 0; const newCats: Row[] = [];
+  for (const [i, r] of rows.entries()) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) return { data: null, error: { message: `row ${i + 1}: invalid date "${r.date}"` } };
+    if (typeof r.amount !== "string" || !(Number(r.amount) > 0)) return { data: null, error: { message: `row ${i + 1}: amount must be greater than zero` } };
+    let type = r.type || "expense"; let goal_id = null, category_id = null;
+    if (type === "goal_contribution") { goal_id = db.goals.find((g) => g.user_id === u && g.name.toLowerCase() === (r.category || "").toLowerCase())?.id ?? null; if (!goal_id) type = "transfer"; }
+    if ((type === "income" || type === "expense") && r.category) {
+      const all = [...db.categories, ...newCats];
+      category_id = all.find((c) => c.user_id === u && c.kind === type && c.name.toLowerCase() === r.category.toLowerCase())?.id ?? null;
+      if (!category_id && p.p_create_categories) { const c = { id: uid(), user_id: u, name: r.category, kind: type, icon: "circle", color: "#9AA19B", sort_order: 90, archived: false }; newCats.push(c); category_id = c.id; cats++; }
+    }
+    if (p.p_skip_duplicates && [...db.transactions, ...staged].some((t) => t.user_id === u && t.txn_date === r.date && Number(t.amount) === Number(r.amount) && t.txn_type === type && t.description.toLowerCase() === r.description.toLowerCase())) { dup++; continue; }
+    staged.push({ id: uid(), user_id: u, txn_date: r.date, description: r.description, amount: Number(r.amount), txn_type: type, category_id, goal_id, income_source_id: null, account_id: null, notes: r.notes || null, category_origin: "manual", is_recurring: false, import_id: imp.id, created_at: "" });
+  }
+  db.categories.push(...newCats);
+  if (staged.length) { imp.imported_count = staged.length; imp.skipped_count = dup; imp.categories_created = cats; db.csv_imports.push(imp); db.transactions.push(...staged); }
+  return { data: { import_id: staged.length ? imp.id : null, rows: rows.length, imported: staged.length, skipped_duplicates: dup, categories_created: cats }, error: null };
+}
+
+// test-only helper: the app no longer offers demo data; tests seed sample data directly
+(window as any).__seedDemo = () => (me() ? seed(me()!) : 'not signed in');
+
 export function createClient(_url: string, _key: string, _o?: any) {
   return {
     auth: {
@@ -142,7 +170,13 @@ export function createClient(_url: string, _key: string, _o?: any) {
       onAuthStateChange(cb: any) { listeners.push(cb); return { data: { subscription: { unsubscribe() { listeners.splice(listeners.indexOf(cb), 1); } } } }; },
     },
     from: (t: string) => new Q(t),
-    async rpc(name: string) { log.push({ op: "rpc", table: name }); return name === "seed_demo_data" && me() ? { data: seed(me()!), error: null } : { data: null, error: { message: "unknown rpc" } }; },
+    async rpc(name: string, params?: any) {
+      log.push({ op: "rpc", table: name, payload: params ? structuredClone(params) : undefined });
+      if (!me()) return { data: null, error: { message: "not authenticated" } };
+      if (name === "seed_demo_data") return { data: seed(me()!), error: null };
+      if (name === "import_transactions") return importTx(me()!, params);
+      return { data: null, error: { message: "unknown rpc" } };
+    },
     functions: {
       async invoke(name: string, { body }: any) {
         log.push({ op: "invoke", table: name, payload: structuredClone(body) });

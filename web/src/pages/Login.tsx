@@ -7,6 +7,17 @@ function strength(p: string) {
   return { score: s, label: ["Too weak", "Weak", "Fair", "Good", "Strong", "Excellent"][s] };
 }
 
+/** Turn Supabase auth errors into plain English. */
+function friendly(msg: string): string {
+  const m = msg.toLowerCase();
+  if (m.includes("rate limit") || m.includes("over_email_send_rate_limit") || m.includes("429"))
+    return "Too many emails have been sent from Mack Finances in the last hour. Please wait about an hour and try again. If you know your password, you can sign in and change it under Settings → Security.";
+  if (m.includes("email not confirmed")) return "Please confirm your email first. Check your inbox (and spam folder) for the confirmation link.";
+  if (m.includes("already registered")) return "An account with this email already exists. Try signing in, or use Forgot password.";
+  if (m.includes("password should be") || m.includes("weak")) return "Please choose a stronger password (at least 8 characters with letters and numbers).";
+  return msg;
+}
+
 export function Login({ theme, setTheme }: { theme: string; setTheme: (t: string) => void }) {
   const [mode, setMode] = useState<"in" | "up" | "reset">("in");
   const [email, setEmail] = useState(""); const [pw, setPw] = useState(""); const [pw2, setPw2] = useState(""); const [name, setName] = useState("");
@@ -20,16 +31,16 @@ export function Login({ theme, setTheme }: { theme: string; setTheme: (t: string
       localStorage.setItem("lg-remember", remember ? "1" : "0");
       if (mode === "in") {
         const { error } = await auth.signIn(email.trim(), pw);
-        if (error) setErr("Incorrect email or password");
+        if (error) setErr(/not confirmed/i.test(error.message) ? friendly(error.message) : "Incorrect email or password");
       } else if (mode === "up") {
         if (pw !== pw2) { setErr("Passwords don't match"); return; }
         if (st.score < 2 || pw.length < 8) { setErr("Use at least 8 characters with a mix of letters and numbers"); return; }
         const { data, error } = await auth.signUp(email.trim(), pw, name.trim());
-        if (error) setErr(error.message);
+        if (error) setErr(friendly(error.message));
         else if (!data.session) setInfo("Check your email to confirm your account, then sign in.");
       } else {
         const { error } = await auth.resetPassword(email.trim());
-        if (error) setErr(error.message); else setInfo("If that email has an account, a reset link is on its way.");
+        if (error) setErr(friendly(error.message)); else setInfo("If that email has an account, a reset link is on its way.");
       }
     } finally { setBusy(false); }
   }

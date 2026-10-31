@@ -20,7 +20,6 @@ async function signIn(page: Page, u: { email: string; pass: string }) {
   await page.getByTestId("auth-submit").click();
   await expect(page.getByTestId("setup").or(page.getByTestId("greeting"))).toBeVisible();
   if (await page.getByTestId("setup").isVisible()) {
-    await page.getByTestId("setup-next").click(); await page.getByTestId("setup-fresh").click();
     for (let i = 0; i < 3; i++) await page.getByTestId("setup-next").click();
     await page.getByTestId("setup-finish").click(); await expect(page.getByTestId("greeting")).toBeVisible();
   }

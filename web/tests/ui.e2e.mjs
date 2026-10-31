@@ -41,7 +41,6 @@ await step("03 sign up → first-run setup (start fresh, custom goal, dark theme
   await page.getByTestId("auth-submit").click();
   await page.getByTestId("setup").waitFor();
   await page.getByTestId("setup-name").fill("Jordan"); await page.getByTestId("setup-next").click();
-  await page.getByTestId("setup-fresh").click(); await page.getByTestId("setup-next").click();
   await page.getByTestId("setup-next").click(); // income sources (defaults)
   await page.getByTestId("setup-next").click(); // goal (House Deposit 60000)
   await page.getByText("Dark", { exact: true }).click();
@@ -147,15 +146,21 @@ await step("11 transactions page: totals, filters, search, delete needs confirma
   await del.click(); await page.waitForTimeout(100); assert(await page.getByTestId("tx-row").count() === 5, "not deleted on confirm");
 });
 
-await step("12 sign out; second user signs up and sees none of the first user's data", async () => {
+await step("12 sign out; new account starts from scratch (no demo option) and sees none of the first user's data", async () => {
   await page.getByTestId("profile-menu").click(); await page.getByTestId("sign-out").click();
   await page.getByTestId("auth-form").waitFor();
   await page.getByTestId("to-signup").click(); await page.getByTestId("name").fill("Sam"); await page.getByTestId("email").fill("sam@test.local");
   await page.getByTestId("password").fill("An0ther!Pass"); await page.getByTestId("password2").fill("An0ther!Pass"); await page.getByTestId("auth-submit").click();
   await page.getByTestId("setup").waitFor();
   // move through demo path
-  await page.getByTestId("setup-next").click(); await page.getByTestId("setup-demo").click(); await page.getByTestId("setup-next").click();
-  await page.getByTestId("setup-finish").click(); await page.getByTestId("greeting").waitFor();
+  assert(!(await page.getByTestId("setup-demo").count()) && !(await page.getByText(/demo data/i).count()), "demo option still offered at sign-up");
+  await page.getByTestId("setup-next").click(); await page.getByTestId("setup-next").click();
+  await page.getByTestId("setup-goal-name").fill(""); // skip the first goal; sample data below brings its own
+  await page.getByTestId("setup-next").click(); await page.getByTestId("setup-finish").click(); await page.getByTestId("greeting").waitFor();
+  assert(await page.evaluate(() => window.__db.tables.transactions.filter((t) => t.user_id === window.__db.users.at(-1).id).length) === 0, "new account is not empty");
+  await page.getByTestId("nav-transactions").click(); await page.getByText("All time").click();
+  assert(await page.getByTestId("tx-empty").isVisible(), "new account should start with no transactions");
+  await page.evaluate(() => window.__seedDemo()); await page.getByTestId("nav-settings").click(); await page.getByText("Sync now").click(); await page.waitForTimeout(300);
   await page.getByTestId("nav-transactions").click(); await page.getByText("All time").click();
   const descs = await page.getByTestId("tx-row").allTextContents();
   assert(!descs.some((d) => /Corner shop|Whole Foods|Bus fare/.test(d)), "user B sees user A rows");

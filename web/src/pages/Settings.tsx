@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useApp } from "../App";
-import { addCategory, auth, seedDemo, updateCategory, updateProfile } from "../lib/api";
+import { addCategory, auth, updateCategory, updateProfile } from "../lib/api";
+import { ImportCsvCard } from "../components/ImportCsv";
 import { Card, Icon, Seg } from "../components/ui";
 
 const CURRENCIES = ["USD", "GBP", "EUR", "CAD", "AUD", "NZD", "CHF", "JPY", "INR", "ZAR"];
@@ -48,9 +49,9 @@ export function Settings() {
           <div className="row wrap" style={{ marginTop: 14 }}>
             <button className="btn" onClick={() => reload().then(() => toast("Synced"))}>Sync now</button>
             <button className="btn" onClick={() => openExport("backup")}><Icon name="download" />Export data (CSV)</button>
-            {data.txns.length === 0 && <button className="btn" onClick={async () => { try { await seedDemo(); await reload(); toast("Demo data loaded"); } catch (e) { toast((e as Error).message, true); } }}>Load demo data</button>}
           </div>
         </Card>
+        <ImportCsvCard />
         <Card title="Categories">
           <div className="stack" style={{ gap: 8, maxHeight: 360, overflow: "auto" }}>
             {data.categories.map((c) => (
