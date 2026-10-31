@@ -1,21 +1,26 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { AppData, auth, loadAll, recordSnapshot } from "./lib/api";
+import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { AppData, auth, loadAll, recordSnapshot, updateProfile } from "./lib/api";
 import { netWorth } from "./lib/calc";
 import { setCurrency } from "./lib/money";
 import { addMonths, labelMonth, monthEnd, monthKey, today } from "./lib/dates";
 import { Icon, Skeleton } from "./components/ui";
 import { Login, LockScreen } from "./pages/Login";
 import { Setup } from "./pages/Setup";
-import { Dashboard } from "./pages/Dashboard";
-import { Transactions, AddTransactionModal, TxnPrefill } from "./pages/Transactions";
-import { Income } from "./pages/Income";
-import { Budget } from "./pages/Budget";
-import { Goals } from "./pages/Goals";
-import { Investments } from "./pages/Investments";
-import { Projections } from "./pages/Projections";
-import { Assistant, AssistantDrawer } from "./pages/Assistant";
-import { Settings } from "./pages/Settings";
-import { ExportModal, ExportPreset } from "./pages/Export";
+import type { TxnPrefill } from "./pages/Transactions";
+import type { ExportPreset } from "./pages/Export";
+
+const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
+const Transactions = lazy(() => import("./pages/Transactions").then((m) => ({ default: m.Transactions })));
+const AddTransactionModal = lazy(() => import("./pages/Transactions").then((m) => ({ default: m.AddTransactionModal })));
+const Income = lazy(() => import("./pages/Income").then((m) => ({ default: m.Income })));
+const Budget = lazy(() => import("./pages/Budget").then((m) => ({ default: m.Budget })));
+const Goals = lazy(() => import("./pages/Goals").then((m) => ({ default: m.Goals })));
+const Investments = lazy(() => import("./pages/Investments").then((m) => ({ default: m.Investments })));
+const Projections = lazy(() => import("./pages/Projections").then((m) => ({ default: m.Projections })));
+const Assistant = lazy(() => import("./pages/Assistant").then((m) => ({ default: m.Assistant })));
+const AssistantDrawer = lazy(() => import("./pages/Assistant").then((m) => ({ default: m.AssistantDrawer })));
+const Settings = lazy(() => import("./pages/Settings").then((m) => ({ default: m.Settings })));
+const ExportModal = lazy(() => import("./pages/Export").then((m) => ({ default: m.ExportModal })));
 
 export type Page = "dashboard" | "transactions" | "income" | "budget" | "goals" | "investments" | "projections" | "assistant" | "settings";
 const NAV: { id: Page; label: string; icon: string }[] = [
@@ -119,7 +124,6 @@ export default function App() {
   const toggleTheme = async () => {
     const next = theme === "dark" ? "light" : "dark";
     setData({ ...data!, profile: { ...data!.profile, theme: next } });
-    const { updateProfile } = await import("./lib/api");
     updateProfile(data!.profile.id, { theme: next }).catch((e) => toast(e.message, true));
   };
 
@@ -150,13 +154,15 @@ export default function App() {
             <button className="iconbtn" onClick={toggleTheme} aria-label="Toggle theme" data-testid="theme-toggle"><Icon name={theme === "dark" ? "sun" : "moon"} /></button>
             <ProfileMenu email={email} name={data!.profile.display_name} onLock={() => setLocked(true)} onSettings={() => go("settings")} />
           </header>
-          <div className="page"><Body /></div>
+          <div className="page"><Suspense fallback={<div className="grid g4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} />)}</div>}><Body /></Suspense></div>
         </main>
       </div>
       {nav.id !== "assistant" && <button className="fab" onClick={() => setDrawer(true)} aria-label="Open AI assistant" data-testid="ai-fab"><Icon name="sparkle" size={22} /></button>}
-      {drawer && <AssistantDrawer onClose={() => setDrawer(false)} />}
-      {addOpen && <AddTransactionModal prefill={addOpen} onClose={() => setAddOpen(null)} />}
-      {exportOpen && <ExportModal preset={exportOpen} onClose={() => setExportOpen(null)} />}
+      <Suspense fallback={null}>
+        {drawer && <AssistantDrawer onClose={() => setDrawer(false)} />}
+        {addOpen && <AddTransactionModal prefill={addOpen} onClose={() => setAddOpen(null)} />}
+        {exportOpen && <ExportModal preset={exportOpen} onClose={() => setExportOpen(null)} />}
+      </Suspense>
       {toastEl}
     </AppCtx.Provider>
   );
