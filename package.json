@@ -1,0 +1,9 @@
+{
+  "name": "mack-finances-root",
+  "private": true,
+  "scripts": {
+    "build": "npm run build --prefix web",
+    "dev": "npm run dev --prefix web",
+    "preview": "npm run preview --prefix web"
+  }
+}
