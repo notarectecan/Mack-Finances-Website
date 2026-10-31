@@ -10,6 +10,8 @@ playwright-report/
 .env
 .env.*
 !.env.example
+# web/.env holds ONLY public browser values (Supabase URL + publishable key) - allowed on purpose
+!web/.env
 *.pem
 *.key
 
