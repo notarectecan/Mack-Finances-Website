@@ -1,0 +1,30 @@
+# dependencies & build output
+node_modules/
+dist/
+web/tests/dist/
+*.tsbuildinfo
+test-results/
+playwright-report/
+
+# secrets: never upload
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# local helper files (stay on this computer only)
+setup-computer.bat
+sign-in-github.bat
+publish-to-github.bat
+setup-log*.txt
+github-code.txt
+publish-log.txt
+_to_delete/
+web/sedSkw9G0
+/package-lock.json
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini

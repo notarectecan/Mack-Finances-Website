@@ -1,0 +1,1 @@
+{ "extends": "../tsconfig.json", "compilerOptions": { "types": [], "typeRoots": [], "noUnusedLocals": true, "noImplicitAny": false }, "include": ["../src", "tsshim"] }

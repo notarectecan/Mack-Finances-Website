@@ -1,0 +1,14 @@
+This is "Mack Finances", a personal finance web app (Vite + React + TypeScript) backed by Supabase.
+Keep ALL existing frontend functionality and these non-negotiable rules when making changes:
+
+1. OpenAI key: NEVER call OpenAI (or put any secret) in client code. AI runs only in Supabase Edge Functions
+   `ai-categorize` and `ai-summary` (supabase/functions). The key is the OPENAI_API_KEY function secret.
+2. Row Level Security: every table has RLS with user_id = auth.uid(). Any new table MUST enable RLS with the same
+   four policies (select/insert/update/delete) and reference parent rows with composite FKs (id, user_id).
+3. Money: DB columns are numeric(12,2). In the browser, money is integer cents (src/lib/money.ts). Send amounts with
+   centsToDb() (an exact "12.34" string). Never send floats or sum floats.
+4. Dates: txn_date is a DATE. Use localDate()/today() from src/lib/dates.ts. Never use toISOString() for dates.
+5. AI categorization: pass the user's category list, require one of those names via JSON schema enum, keep manual
+   override (category_origin = 'manual' | 'ai').
+6. Data sent to OpenAI: categorization sends ONLY the description; summaries send ONLY per-category totals.
+Only use VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (publishable) in the frontend.
