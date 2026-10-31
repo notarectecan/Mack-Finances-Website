@@ -1,0 +1,5 @@
+[functions.ai-categorize]
+verify_jwt = true
+
+[functions.ai-summary]
+verify_jwt = true

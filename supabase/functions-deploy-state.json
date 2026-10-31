@@ -1,0 +1,13 @@
+{
+  "projectId": "72537362",
+  "functions": {
+    "ai-categorize": {
+      "hasChanged": false,
+      "hash": "26416afc2222246fb4ab4d9237af8632b757a2d5e626dd9dee7255bab1f1c15272e908f7fed5f8f6967a97eeb0147c6766394355622d0c845a48fd11caecfe72"
+    },
+    "ai-summary": {
+      "hasChanged": false,
+      "hash": "a513cf5026c9b0813794c7c0c13c38e9d2ab0f97669517bc08de2a548f1dad1172e908f7fed5f8f6967a97eeb0147c6766394355622d0c845a48fd11caecfe72"
+    }
+  }
+}
